@@ -2,9 +2,9 @@ import json
 import aiohttp
 import asyncio
 
-secret = 'ej222222'
+secret = ''
 http_url = 'http://127.0.0.1:5701/'
-self_id = '1660441756'
+self_id = ''
 
 def get_self_id(bot_id = self_id):
     return bot_id

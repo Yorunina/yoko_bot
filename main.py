@@ -1,18 +1,19 @@
 import sys
+#导入独立包路径
 sys.path.append('.\\Lib\\site-packages')
 import websockets
 import asyncio
 import mapping_flow
+import api
 
 
-ws_uri = 'ws://127.0.0.1:5700'
+ws_uri = api.get_ws_uri()
 async def async_processing():
     async with websockets.connect(ws_uri) as websocket:
         while True:
             try:
                 message = await websocket.recv()
                 await mapping_flow.main_process(message)
-                print(message)
             except websockets.ConnectionClosed:
                 print('ConnectionClosed')
                 break

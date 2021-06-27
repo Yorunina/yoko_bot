@@ -7,16 +7,16 @@ import requests
 secret = ''
 ws_uri = 'ws://127.0.0.1:5700'
 http_url = 'http://127.0.0.1:5701/'
-self_id = json.loads(requests.get(http_url + 'get_login_info').text)['data'].get('user_id',0)
+self_id = json.loads(
+    requests.get(http_url + 'get_login_info').text
+    )['data'].get('user_id',0)
 
-def get_self_id(bot_id = self_id):
-    return bot_id
-
-def get_http_url(url = http_url):
-    return url
-
-def get_ws_uri(ws = ws_uri):
-    return ws
+def get_self_id():
+    return self_id
+def get_http_url():
+    return http_url
+def get_ws_uri():
+    return ws_uri
 
 async def post(data, url = http_url):
     async with aiohttp.ClientSession() as session:
@@ -25,11 +25,19 @@ async def post(data, url = http_url):
         }
         jdata = json.dumps(data['params'])
         async with session.post(url + data['action'], data=jdata, headers=headers) as response: 
-            return await response.text()
+            return await json.load(response.text())
+
+###############################################
 
 #图片cq码
 async def cq_pic(url):
     return '[CQ:image,file=' + url + ']'
+
+###############################################
+
+
+
+###############################################
 
 #私聊消息发送函数封装
 async def send_private_msg(qq, group, msg):
@@ -48,19 +56,6 @@ async def send_group_msg(group, msg):
     params['group_id'] = group if group else 0
     params['message'] = msg
     data['action'] = 'send_group_msg'
-    data['params'] = params
-    res = await post(data)
-    return res
-
-#自适应消息发送
-async def send_msg(qq, group, msg):
-    data, params = dict(), dict()
-    if group == 0 and qq!=0:
-        params['user_id'] = qq
-    elif group!=0:
-        params['group_id'] = group
-    params['message'] = msg
-    data['action'] = 'send_msg'
     data['params'] = params
     res = await post(data)
     return res
@@ -187,6 +182,18 @@ async def set_group_name(group, name):
     await post(data)
     return
 
+#设置群头像
+async def set_group_portrait(group, file, cache = '1'):
+    #file支持绝对路径，url和base64
+    data, params = dict(), dict()
+    params['group_id'] = group
+    params['file'] = file
+    params['cache'] = cache
+    data['action'] = 'set_group_portrait'
+    data['params'] = params
+    await post(data)
+    return
+
 #获取登录号信息
 async def get_login_info():
     data, params = dict(), dict()
@@ -240,6 +247,41 @@ async def set_group_add_request(flag, type, approve = 'true', remark = ''):
     await post(data)
     return
 
+#获取好友列表
+async def get_friend_list():
+    data, params = dict(), dict()
+    data['action'] = 'get_friend_list'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#删除好友
+async def delete_friend(friend_id):
+    data, params = dict(), dict()
+    params['friend_id'] = friend_id
+    data['action'] = 'delete_friend'
+    data['params'] = params
+    await post(data)
+    return
+
+#获取群信息
+async def get_group_info(group, no_cache = 'false'):
+    data, params = dict(), dict()
+    params['group_id'] = group
+    params['no_cache'] = no_cache
+    data['action'] = 'get_group_info'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#获取群列表
+async def get_group_list():
+    data, params = dict(), dict()
+    data['action'] = 'get_group_list'
+    data['params'] = params
+    res = await post(data)
+    return res
+
 #获取群成员信息，要求必须使用群号和QQ号
 async def get_group_member_info(qq, group, no_cache = 'false'):
     data, params= dict(), dict()
@@ -261,6 +303,168 @@ async def get_stranger_info(qq, no_cache = False):
     res = await post(data)
     return res
 
+#获取群成员列表
+async def get_group_member_list(group):
+    data, params = dict(), dict()
+    params['group_id'] = group
+    data['action'] = 'get_group_member_list'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#获取群荣誉信息
+async def get_group_honor_info(group, type = 'all'):
+    data, params = dict(), dict()
+    params['group_id'] = group
+    #talkative performer legend strong_newbie emotion 以分别获取单个类型的群荣誉数据
+    #或传入 all 获取所有数据
+    params['type'] = type
+    data['action'] = 'get_group_honor_info'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#图片ocr
+async def ocr_image(image):
+    #image指图片ID
+    data, params = dict(), dict()
+    params['image'] = image
+    data['action'] = 'ocr_image'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#获取群系统消息
+async def get_group_system_msg():
+    data, params = dict(), dict()
+    data['action'] = 'get_group_system_msg'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#上传群文件
+async def upload_group_file(group, file, name, folder = ''):
+    #file为本地路径，name为上传后的文件名，folder为上传目录
+    data, params = dict(), dict()
+    params['group_id'] = group
+    params['file'] = file
+    params['name'] = name
+    params['folder'] = folder
+    data['action'] = 'upload_group_file'
+    data['params'] = params
+    await post(data)
+    return
+
+#获取群根目录文件列表
+async def get_group_root_files(group):
+    data, params = dict(), dict()
+    params['group_id'] = group
+    data['action'] = 'get_group_root_files'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#获取群子目录文件列表
+async def get_group_files_by_folder(group, folder):
+    data, params = dict(), dict()
+    params['group_id'] = group
+    params['folder_id'] = folder
+    data['action'] = 'get_group_files_by_folder'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#获取群文件资源链接
+async def get_group_file_url(group, file_id, busid):
+    data, params = dict(), dict()
+    params['group_id'] = group
+    params['file_id'] = file_id
+    params['busid'] = busid
+    data['action'] = 'get_group_file_url'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#获取群文件系统信息
+async def get_group_file_system_info(group):
+    #file为本地路径，name为上传后的文件名，folder为上传目录
+    data, params = dict(), dict()
+    params['group_id'] = group
+    data['action'] = 'get_group_file_system_info'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#发送群公告
+async def send_group_notice(group, content):
+    data, params = dict(), dict()
+    params['group_id'] = group
+    params['content'] = content
+    data['action'] = '_send_group_notice'
+    data['params'] = params
+    await post(data)
+    return
+
+#获取群历史消息
+async def get_group_msg_history(group, message_seq):
+    data, params = dict(), dict()
+    params['group_id'] = group
+    params['message_seq'] = message_seq
+    data['action'] = 'get_group_msg_history'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#设置精华消息
+async def set_essence_msg(message_id):
+    data, params = dict(), dict()
+    params['message_id'] = message_id
+    data['action'] = 'set_essence_msg'
+    data['params'] = params
+    await post(data)
+    return
+
+#移除精华消息
+async def delete_essence_msg(message_id):
+    data, params = dict(), dict()
+    params['message_id'] = message_id
+    data['action'] = 'delete_essence_msg'
+    data['params'] = params
+    await post(data)
+    return
+
+#获取状态
+async def get_status():
+    data, params = dict(), dict()
+    data['action'] = 'get_status'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#获取版本信息
+async def get_version_info():
+    data, params = dict(), dict()
+    data['action'] = 'get_version_info'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#重启CQ
+async def set_restart(delay = '0'):
+    data, params = dict(), dict()
+    params['delay'] = delay
+    data['action'] = 'set_restart'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+###############################################
+
+
+
+
+###############################################
+
 #获取称呼
 async def get_name(qq, group = 0):
     if group == 0:
@@ -273,7 +477,20 @@ async def get_name(qq, group = 0):
         res = data['data'].get('card', '您')
     return res
 
-#消息用户对象
+#自适应消息发送
+async def send_msg(qq, group, msg):
+    data, params = dict(), dict()
+    if group == 0 and qq!=0:
+        params['user_id'] = qq
+    elif group!=0:
+        params['group_id'] = group
+    params['message'] = msg
+    data['action'] = 'send_msg'
+    data['params'] = params
+    res = await post(data)
+    return res
+
+#已知消息，跟踪用户对象
 class MsgUser:
     def __init__(self, data):
         self.qq = data.get('user_id', 0)
@@ -286,7 +503,7 @@ class MsgUser:
     async def redirect_group(self, group_id):
         self.group = group_id
         return
-    #以对象为参数的自适应回复
+    #自适应回复
     async def send(self,msg):
         msg_id = await send_msg(self.qq, self.group, msg)
         return msg_id
@@ -295,5 +512,3 @@ class MsgUser:
         if self.name:
             self.name = await get_name(self.qq, self.group)
         return self.name
-
-

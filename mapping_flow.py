@@ -29,11 +29,15 @@ async def private_event(data):
     msg = str(data['message'])
     command_obj = re.match('(?:\[CQ:at,qq=' + bot_id + '\])?\s*[\.。](.+)', msg, re.M|re.I)
     if command_obj:
+        #获取前缀外的子关键词
         command = command_obj.group(1)
         for key in match_flow_private:
+            #进行正则序列匹配
             match_obj = re.match(key, command, re.M|re.I)
             if match_obj:
+                #匹配成功，传入键值并且传入子关键词
                 await match_flow_private[key](data, command_obj)
+                #匹配成功后即刻中断
                 break
     return
 

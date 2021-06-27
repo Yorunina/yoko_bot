@@ -8,6 +8,7 @@ async def setu(data, r_18 = False):
     #获取游标对象
     cursor = conn.cursor()
     state = 'SETU' if r_18 else 'SETU2'
+    #随机提取色图
     sql_sen = 'SELECT * FROM ' + state + ' ORDER BY RANDOM() limit 1;'
     cursor.execute(sql_sen)
     value = cursor.fetchall()
@@ -17,6 +18,7 @@ async def setu(data, r_18 = False):
     footer_obj = re.search('_p\d(\.[a-z]{3})',ori_url,re.M|re.I)
     footer = footer_obj.group(1)
     url = 'https://picbucket-1257117970.cos.ap-beijing.myqcloud.com/' + pid + footer
+    #建立消息对象
     user = api.MsgUser(data)
     await user.send(await api.cq_pic(url))
     #关闭数据库服务

@@ -24,6 +24,7 @@ async def default():
 #戳一戳事件处理
 async def poke_event(data):
     await setu.setu(data, False)
+    return
 
 async def private_event(data):
     msg = str(data['message'])

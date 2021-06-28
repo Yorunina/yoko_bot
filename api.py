@@ -18,20 +18,44 @@ def get_http_url():
 def get_ws_uri():
     return ws_uri
 
+#上报通用函数
 async def post(data, url = http_url):
     async with aiohttp.ClientSession() as session:
         headers = {
             'Content-Type': 'application/json'
         }
         jdata = json.dumps(data['params'])
-        async with session.post(url + data['action'], data=jdata, headers=headers) as response: 
-            return await json.load(response.text())
+        async with session.post(url + data['action'], data=jdata, headers=headers) as response:
+            res = await response.text()
+            if res:
+                return json.loads(res)
+            return 
+
+#下载图片到指定temp目录
+async def download_image(url, name, proxies = '', chunk_size = 1024):
+    headers = {
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers, proxy=proxies) as resp:
+            with open('.\\temp\\' + name, 'wb') as f:
+                while True:
+                    chunk = await resp.content.read(chunk_size)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+    return
 
 ###############################################
 
 #图片cq码
-async def cq_pic(url):
-    return '[CQ:image,file=' + url + ']'
+async def cq_pic(file):
+    return '[CQ:image,file=' + file + ']'
+
+#语音
+async def cq_voice(file):
+    return '[CQ:record,file=' + file + ']'
+
+#回复指定消息
 
 ###############################################
 
@@ -489,6 +513,12 @@ async def send_msg(qq, group, msg):
     data['params'] = params
     res = await post(data)
     return res
+
+#获取发送者头像
+async def get_headpic_url(qq, size = '160'):
+    #size可以为640、320、40
+    url = 'http://q1.qlogo.cn/g?b=qq&nk=' + str(qq) + '&s=' + str(size)
+    return url
 
 #已知消息，跟踪用户对象
 class MsgUser:

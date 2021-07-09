@@ -25,10 +25,12 @@ async def setu(data, r_18 = False):
     conn.close()
     return
 
+#用于异步调用的函数
 async def send_setu(data, command_obj):
     await setu(data, False)
     return
-
 async def send_bsetu(data, command_obj):
     await setu(data, True)
     return
+
+api.map_update('all', {'setu':send_setu ,'setub':send_bsetu})

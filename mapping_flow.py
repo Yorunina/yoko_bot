@@ -3,22 +3,18 @@ from script import *
 import re
 import api
 
-bot_id = str(api.get_self_id())
+bot_id = str(api.glo_get('self_id'))
 
-match_flow_group = {}
-match_flow_private = {}
-match_flow_all = {'setu':setu.send_setu,
-                  'bsetu':setu.send_bsetu}
-
-match_flow_group.update(match_flow_all)
-match_flow_private.update(match_flow_all)
-
+match_flow = api.map_get()
+match_flow_private = match_flow['private_map']
+match_flow_group = match_flow['group_map']
+print(match_flow)
 async def common_event():
-    return
+    pass
 async def unknown_event():
-    return
+    pass
 async def default():
-    return
+    pass
 
 
 #戳一戳事件处理
@@ -28,6 +24,9 @@ async def poke_event(data):
 
 async def private_event(data):
     msg = str(data['message'])
+    #完全匹配流
+    #正则匹配流
+    #定义匹配前缀
     command_obj = re.match('(?:\[CQ:at,qq=' + bot_id + '\])?\s*[\.。](.+)', msg, re.M|re.I)
     if command_obj:
         #获取前缀外的子关键词
@@ -126,3 +125,4 @@ async def main_process(ori_data):
                 await unknown_event()
         else:
             await unknown_event()
+    return

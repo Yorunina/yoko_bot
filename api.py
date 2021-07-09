@@ -1,4 +1,6 @@
 import json
+from aiohttp import http
+from asyncio.base_events import Server
 import aiohttp
 import asyncio
 import re
@@ -11,12 +13,44 @@ self_id = json.loads(
     requests.get(http_url + 'get_login_info').text
     )['data'].get('user_id',0)
 
-def get_self_id():
-    return self_id
-def get_http_url():
-    return http_url
-def get_ws_uri():
-    return ws_uri
+global_dict, group_map, private_map = {}, {}, {}
+
+def glo_set(key, value):
+    global_dict[key] = value
+    return
+def glo_get(key, defValue = None):
+    try:
+        return global_dict[key]
+    except KeyError:
+        return defValue
+async def asy_glo_set(key, value):
+    global_dict[key] = value
+    return
+async def asy_glo_get(key, defValue = None):
+    try:
+        return global_dict[key]
+    except KeyError:
+        return defValue
+
+glo_set('secret', secret)
+glo_set('ws_uri', ws_uri)
+glo_set('http_url', http_url)
+glo_set('self_id', self_id)
+
+def map_update(type, dic):
+    if type == 'group':
+        group_map.update(dic)
+    elif type == 'private':
+        private_map.update(dic)
+    elif type == 'all':
+        group_map.update(dic)
+        private_map.update(dic)
+    else:
+        raise ValueError("错误的流添加类型，必须是all、group或者private")
+    return
+
+def map_get():
+    return {'group_map':group_map, 'private_map':private_map}
 
 #上报通用函数
 async def post(data, url = http_url):
@@ -54,6 +88,10 @@ async def cq_pic(file):
 #语音
 async def cq_voice(file):
     return '[CQ:record,file=' + file + ']'
+
+#AT某人
+async def cq_at(qq):
+    return '[CQ:at,qq=]' + qq + ']'
 
 #回复指定消息
 

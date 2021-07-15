@@ -29,8 +29,11 @@ async def setu(data, r_18 = False):
 async def send_setu(data, command_obj):
     await setu(data, False)
     return
-async def send_bsetu(data, command_obj):
+async def send_setub(data, command_obj):
     await setu(data, True)
     return
 
-api.map_update('all', {'setu':send_setu ,'setub':send_bsetu})
+#匹配类型：私聊、匹配依据：setu、调用函数：send_setu、匹配方式：前缀匹配：prefix、匹配优先级：50（越大越优先）
+api.match_update('private', 'setu', send_setu, 'pre', 50)
+api.match_update('private', 'setub', send_setub, 'pre', 50)
+api.match_update('group', 'setu', send_setu, 'pre', 50)

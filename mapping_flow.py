@@ -4,11 +4,11 @@ import re
 import api
 
 bot_id = str(api.glo_get('self_id'))
-
-match_flow = api.map_get()
-match_flow_private = match_flow['private_map']
-match_flow_group = match_flow['group_map']
-print(match_flow)
+at_id = '[CQ:at,qq=' + bot_id + ']'
+match_map = api.get_match_map()
+match_flow_private = match_map['private']
+match_flow_group = match_map['group']
+print(match_map)
 async def common_event():
     pass
 async def unknown_event():
@@ -17,6 +17,28 @@ async def default():
     pass
 
 
+async def flow_deal(data, command:str, flow):
+    for obj in flow:
+        key = obj['key']
+        #进行正则匹配
+        if obj['match_type'] == 'reg':
+            #正则表达式匹配
+            match_obj = re.match(key, command, re.M|re.I)
+            #如果成功
+            if match_obj:
+                #调用函数
+                await obj['function'](data, command)
+                break
+        #进行完全匹配
+        if obj['match_type'] == 'abs' and command == key:
+            await obj['function'](data, command)
+            break
+        #进行前缀匹配
+        if obj['match_type'] == 'pre' and command.startswith(key):
+            await obj['function'](data, command)
+            break
+    return
+
 #戳一戳事件处理
 async def poke_event(data):
     await setu.setu(data, False)
@@ -24,34 +46,28 @@ async def poke_event(data):
 
 async def private_event(data):
     msg = str(data['message'])
-    #完全匹配流
-    #正则匹配流
-    #定义匹配前缀
-    command_obj = re.match('(?:\[CQ:at,qq=' + bot_id + '\])?\s*[\.。](.+)', msg, re.M|re.I)
-    if command_obj:
-        #获取前缀外的子关键词
-        command = command_obj.group(1)
-        for key in match_flow_private:
-            #进行正则序列匹配
-            match_obj = re.match(key, command, re.M|re.I)
-            if match_obj:
-                #匹配成功，传入键值并且传入子关键词
-                await match_flow_private[key](data, command_obj)
-                #匹配成功后即刻中断
-                break
+    #多匹配机制
+    if msg.startswith(('.', '。')):
+        #清除空格和首位
+        command = msg[1:].strip()
+        #进行循环匹配
+        await flow_deal(data, command, match_flow_private)
     return
+
 
 
 async def group_event(data):
     msg = str(data['message'])
-    command_obj = re.match('(?:\[CQ:at,qq=' + bot_id + '\])?\s*[\.。](.+)', msg, re.M|re.I)
-    if command_obj:
-        command = command_obj.group(1)
-        for key in match_flow_group:
-            match_obj = re.match(key, command, re.M|re.I)
-            if match_obj:
-                await match_flow_group[key](data, command_obj)
-                break
+    #清除前缀干扰并且添加at标识
+    if msg.startswith(at_id):
+        msg = msg.rstrip(at_id).strip()
+        flag_at = True
+    #多匹配机制
+    if msg.startswith(('.', '。')):
+        #清除空格和首位
+        command = msg[1:].strip()
+        #进行循环匹配
+        await flow_deal(data, command, match_flow_group)
     return
 
 async def main_process(ori_data):

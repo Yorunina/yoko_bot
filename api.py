@@ -13,8 +13,9 @@ self_id = json.loads(
     requests.get(http_url + 'get_login_info').text
     )['data'].get('user_id',0)
 
-global_dict, group_map, private_map = {}, {}, {}
-
+global_dict = {}
+match_map ={'private':[], 'group':[]}
+#进行全局变量管理
 def glo_set(key, value):
     global_dict[key] = value
     return
@@ -31,26 +32,31 @@ async def asy_glo_get(key, defValue = None):
         return global_dict[key]
     except KeyError:
         return defValue
-
+#设置常用全局变量
 glo_set('secret', secret)
 glo_set('ws_uri', ws_uri)
 glo_set('http_url', http_url)
 glo_set('self_id', self_id)
 
-def map_update(type, dic):
-    if type == 'group':
-        group_map.update(dic)
-    elif type == 'private':
-        private_map.update(dic)
-    elif type == 'all':
-        group_map.update(dic)
-        private_map.update(dic)
-    else:
-        raise ValueError("错误的流添加类型，必须是all、group或者private")
+#更新匹配结构
+def match_update(msg_type: str, key: str, fun: str, match_type = 'reg', priority = 100):
+    #优先级越大越优先，默认为100
+    #match_map本身类型为承载msg_type触发类型的字典
+    #msg_type下则为一个依照优先级顺序排序的列表
+    #列表中每个元素对应不同回复的属性字典
+    index = -1
+    for i in range(0, len(match_map[msg_type])-1):
+        #每次插入进行一次独立排序，得到优先级队列
+        if match_map[msg_type][i]['priority'] < priority:
+            index = i
+            break
+    match_map[msg_type].insert(index, {'match_type':match_type, 'key':key, 'function':fun, 'priority':priority})
+    print("已导入: %s 的回复" % (key))
     return
 
-def map_get():
-    return {'group_map':group_map, 'private_map':private_map}
+def get_match_map():
+    return match_map
+#######################################
 
 #上报通用函数
 async def post(data, url = http_url):
@@ -580,3 +586,5 @@ class MsgUser:
         if self.name:
             self.name = await get_name(self.qq, self.group)
         return self.name
+
+

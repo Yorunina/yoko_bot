@@ -1,20 +1,21 @@
 import json
-from aiohttp import http
-from asyncio.base_events import Server
 import aiohttp
-import asyncio
-import re
+import configparser
 import requests
 
-secret = ''
-ws_uri = 'ws://127.0.0.1:5700'
-http_url = 'http://127.0.0.1:5701/'
-self_id = json.loads(
-    requests.get(http_url + 'get_login_info').text
-    )['data'].get('user_id',0)
-
 global_dict = {}
-match_map ={'private':[], 'group':[]}
+match_map ={'private':[],
+            'group':[],
+            'group_increase':[]}
+
+
+class Platform:
+    def __init__(self, data):
+        self.qq = data.get('user_id', 0)
+        self.group = data.get('group_id', 0)
+        return
+
+
 #进行全局变量管理
 def glo_set(key, value):
     global_dict[key] = value
@@ -32,11 +33,46 @@ async def asy_glo_get(key, defValue = None):
         return global_dict[key]
     except KeyError:
         return defValue
-#设置常用全局变量
-glo_set('secret', secret)
-glo_set('ws_uri', ws_uri)
-glo_set('http_url', http_url)
-glo_set('self_id', self_id)
+
+#配置初始化
+def config_init():
+    config = configparser.ConfigParser()
+    config.read("./config.ini")
+    secs = config.sections()
+    if "QQ_config" not in secs:
+        #添加不存在的配置节并初始化
+        config.add_section("QQ_config")
+        config.set("QQ_config", "ws_uri", "ws://127.0.0.1:5700")
+        config.set("QQ_config", "http_url", "http://127.0.0.1:5701/")
+        #写入配置文件
+        f = open('./config.ini', 'w')
+        config.write(f)
+        f.close()
+
+    opt = config.options("QQ_config")
+    if "ws_uri" not in opt:
+        config.set("QQ_config", "ws_uri", "ws://127.0.0.1:5700")
+    if "http_url" not in opt:
+        config.set("QQ_config", "http_url", "http://127.0.0.1:5701/")
+    
+    ws_uri = config.get("QQ_config", "ws_uri")
+    http_url = config.get("QQ_config", "http_url")
+    self_id = json.loads(
+    requests.get(http_url + 'get_login_info').text
+    )['data'].get('user_id',0)
+    return [ws_uri, http_url, self_id]
+
+#对象化平台参数
+class Platform:
+    def __init__(self):
+        config_para = config_init()
+        self.ws_uri = config_para[0]
+        self.http_url = config_para[1]
+        self.self_id = config_para[2]
+        glo_set("platform", self)
+        return
+
+platform = Platform()
 
 #更新匹配结构
 def match_update(msg_type: str, key: str, fun: str, match_type = 'reg', priority = 100):
@@ -59,7 +95,7 @@ def get_match_map():
 #######################################
 
 #上报通用函数
-async def post(data, url = http_url):
+async def post(data, url = platform.http_url):
     async with aiohttp.ClientSession() as session:
         headers = {
             'Content-Type': 'application/json'
@@ -563,6 +599,9 @@ async def get_headpic_url(qq, size = '160'):
     #size可以为640、320、40
     url = 'http://q1.qlogo.cn/g?b=qq&nk=' + str(qq) + '&s=' + str(size)
     return url
+
+
+#################对 象 化#######################
 
 #已知消息，跟踪用户对象
 class MsgUser:

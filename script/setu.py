@@ -2,6 +2,7 @@ import sqlite3
 import re
 import api
 
+
 async def setu(data, r_18 = False):
     #建立数据库连接
     conn = sqlite3.connect('.\\database\\setu.db')
@@ -25,7 +26,7 @@ async def setu(data, r_18 = False):
     conn.close()
     return
 
-#用于异步调用的函数
+    #用于异步调用的函数
 async def send_setu(data, command_obj):
     await setu(data, False)
     return

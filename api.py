@@ -1,20 +1,11 @@
-import json
-import aiohttp
-import configparser
-import requests
+import aiohttp, requests
+import os, sys, configparser, json
+from importlib import import_module
 
 global_dict = {}
-match_map ={'private':[],
-            'group':[],
+match_map ={'private_message':[],
+            'group_message':[],
             'group_increase':[]}
-
-
-class Platform:
-    def __init__(self, data):
-        self.qq = data.get('user_id', 0)
-        self.group = data.get('group_id', 0)
-        return
-
 
 #进行全局变量管理
 def glo_set(key, value):
@@ -33,6 +24,32 @@ async def asy_glo_get(key, defValue = None):
         return global_dict[key]
     except KeyError:
         return defValue
+
+#更新匹配结构
+def match_update(msg_type: str, key: str, fun: str, match_type = 'reg', priority = 100):
+    #优先级越大越优先，默认为100
+    #match_map本身类型为承载msg_type触发类型的字典
+    #msg_type下则为一个依照优先级顺序排序的列表
+    #列表中每个元素对应不同回复的属性字典
+    content = {'match_type':match_type, 'key':key, 'function':fun, 'priority':priority}
+    if content not in match_map[msg_type]:
+        index = -1
+        for i in range(0, len(match_map[msg_type])-1):
+            #每次插入进行一次独立排序，得到优先级队列
+            if match_map[msg_type][i]['priority'] < priority:
+                index = i
+                break
+        match_map[msg_type].insert(index, content)
+        print("已导入: %s 的回复" % (key))
+    return
+
+def get_match_map():
+    return match_map
+
+#############################################
+
+
+#############################################
 
 #配置初始化
 def config_init():
@@ -69,29 +86,39 @@ class Platform:
         self.ws_uri = config_para[0]
         self.http_url = config_para[1]
         self.self_id = config_para[2]
-        glo_set("platform", self)
         return
-
 platform = Platform()
+glo_set("platform", platform)
 
-#更新匹配结构
-def match_update(msg_type: str, key: str, fun: str, match_type = 'reg', priority = 100):
-    #优先级越大越优先，默认为100
-    #match_map本身类型为承载msg_type触发类型的字典
-    #msg_type下则为一个依照优先级顺序排序的列表
-    #列表中每个元素对应不同回复的属性字典
-    index = -1
-    for i in range(0, len(match_map[msg_type])-1):
-        #每次插入进行一次独立排序，得到优先级队列
-        if match_map[msg_type][i]['priority'] < priority:
-            index = i
-            break
-    match_map[msg_type].insert(index, {'match_type':match_type, 'key':key, 'function':fun, 'priority':priority})
-    print("已导入: %s 的回复" % (key))
-    return
 
-def get_match_map():
-    return match_map
+#初始化载入插件
+class Plugin:
+    def __init__(self):
+        self.load_dir()
+
+    def load_dir(self):
+        for filename in os.listdir("plugins"):
+            if not filename.endswith(".zip"):
+                continue
+            self.load_Plugin(filename)
+
+    def load_Plugin(self, filename:str):
+        pluginPath = os.path.join("plugins", filename)
+        sys.path.append(pluginPath)
+        name = filename.rsplit(".", 1)[0]
+        try:
+            module = import_module(name)
+        except:
+            print("插件%s载入出错！"%name)
+            return
+        print("载入插件%s成功"%name)
+        return module
+
+plugin=Plugin()
+
+#######################################
+
+
 #######################################
 
 #上报通用函数
@@ -109,8 +136,7 @@ async def post(data, url = platform.http_url):
 
 #下载图片到指定temp目录
 async def download_image(url, name, proxies = '', chunk_size = 1024):
-    headers = {
-    }
+    headers = {}
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers, proxy=proxies) as resp:
             with open('.\\temp\\' + name, 'wb') as f:
@@ -120,6 +146,9 @@ async def download_image(url, name, proxies = '', chunk_size = 1024):
                         break
                     f.write(chunk)
     return
+
+###############################################
+
 
 ###############################################
 
@@ -600,8 +629,10 @@ async def get_headpic_url(qq, size = '160'):
     url = 'http://q1.qlogo.cn/g?b=qq&nk=' + str(qq) + '&s=' + str(size)
     return url
 
+#######################################
 
-#################对 象 化#######################
+
+########################################
 
 #已知消息，跟踪用户对象
 class MsgUser:

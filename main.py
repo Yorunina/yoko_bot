@@ -1,6 +1,6 @@
-import sys
+from sys import path
 #导入独立包路径
-sys.path.append('.\\Lib\\site-packages')
+path.append('.\\Lib\\site-packages')
 import websockets
 import asyncio
 import mapping_flow

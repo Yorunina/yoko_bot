@@ -1,8 +1,5 @@
-import json
-import re
-import api
+import json, api, re
 
-script = __import__("script.setu")
 platform = api.glo_get("platform")
 bot_id = str(platform.self_id)
 at_id = '[CQ:at,qq=' + bot_id + ']'
@@ -13,7 +10,6 @@ async def unknown_event(data):
     pass
 async def default():
     pass
-
 
 async def flow_deal(data, command:str, flow):
     for obj in flow:
@@ -45,7 +41,7 @@ async def private_event(data):
         #清除空格和首位
         command = msg[1:].strip()
         #进行循环匹配
-        await flow_deal(data, command, match_map['private'])
+        await flow_deal(data, command, match_map['private_message'])
     return
 
 #群聊事件
@@ -60,7 +56,7 @@ async def group_event(data):
         #清除空格和首位
         command = msg[1:].strip()
         #进行循环匹配
-        await flow_deal(data, command, match_map['group'])
+        await flow_deal(data, command, match_map['group_message'])
     return
 
 #无匹配常规事件
@@ -76,9 +72,10 @@ async def common_event(data):
     for obj in match_map[event_type]:
         obj['function'](data, '')
     return
+
 #戳一戳事件处理
 async def notify_event(data):
-    await script.setu.setu(data, False)
+    #await setu.setu(data, False)
     return
 
 async def main_process(ori_data):

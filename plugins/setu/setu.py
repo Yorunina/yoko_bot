@@ -3,7 +3,7 @@ import re
 import api
 
 class setu:
-    async def find_setu(data, r_18 = False):
+    def find_setu(data, r_18 = False):
         #建立数据库连接
         conn = sqlite3.connect('.\\database\\setu.db')
         #获取游标对象
@@ -21,17 +21,17 @@ class setu:
         url = 'https://picbucket-1257117970.cos.ap-beijing.myqcloud.com/' + pid + footer
         #建立消息对象
         user = api.MsgUser(data)
-        await user.send(await api.cq_pic(url))
+        user.send(api.cq_pic(url))
         #关闭数据库服务
         conn.close()
         return
 
         #用于异步调用的函数
-    async def send_setu(data, command_obj):
-        await setu.find_setu(data, False)
+    def send_setu(data, command_obj):
+        setu.find_setu(data, False)
         return
-    async def send_setub(data, command_obj):
-        await setu.find_setu(data, True)
+    def send_setub(data, command_obj):
+        setu.find_setu(data, True)
         return
 
 class plugin_load:
